@@ -922,33 +922,30 @@ public final class RTree<T, S extends Geometry> {
   }
 
   public HashSet<Entry<T, S>> skyline() {
-    HashSet<HasGeometry> s = new HashSet<>();
+    HashSet<Entry<T, S>> ans = new HashSet<>();
     PriorityQueue<HasGeometry> heap = new PriorityQueue<>((o1, o2) -> (int) Math.round((o1.geometry().mbr().x1() + o1.geometry().mbr().y1()) - (o2.geometry().mbr().x1() + o2.geometry().mbr().y1())));
     heap.add(root.get());
     while (!heap.isEmpty()) {
       HasGeometry top = heap.remove();
-      if (dominated(top, s))
+      if (dominated(top, ans))
         continue;
       if (top instanceof NonLeaf) {
         for (Node<T, S> node : ((NonLeaf<T, S>) top).children())
-          if (!dominated(top, s))
+          if (!dominated(top, ans))
             heap.add(node);
       } else if (top instanceof Leaf) {
         for (Entry<T, S> node : ((Leaf<T, S>) top).entries())
-          if (!dominated(node, s))
-            s.add(node);
+          if (!dominated(node, ans))
+            ans.add(node);
       } else if (top instanceof Entry) {
-        if (!dominated(top, s))
-          s.add(top);
+        if (!dominated(top, ans))
+          ans.add((Entry<T, S>) top);
       }
     }
-    HashSet<Entry<T, S>> ans = new HashSet<>(s.size());
-    for (HasGeometry node : s)
-      ans.add(context.factory().createEntry(null, (S) node.geometry()));
     return ans;
   }
 
-  private boolean dominated(HasGeometry node, HashSet<HasGeometry> set) {
+  private boolean dominated(HasGeometry node, HashSet<Entry<T, S>> set) {
     for (HasGeometry n : set)
       if (n.geometry().mbr().x1() <= node.geometry().mbr().x1() && n.geometry().mbr().y1() <= node.geometry().mbr().y1())
         return true;
