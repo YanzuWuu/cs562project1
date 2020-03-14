@@ -25,9 +25,9 @@ recording the skyline points.
 ## Main coding
 
 The coding part is mainly distributed in three part:
-- Rtree.java in '/Users/y/Courses/562database/cs562project1/rtree/src/main/java/com/github/davidmoten/rtree/RTree.java'
+- Rtree.java in '/cs562project1/rtree/src/main/java/com/github/davidmoten/rtree/RTree.java'
 Added a skyline function.
-- SkylineTest in '/Users/y/Courses/562database/cs562project1/rtree/src/test/java/com/github/davidmoten/rtree/SerializersTest.java'
+- SkylineTest in '/cs562project1/rtree/src/test/java/com/github/davidmoten/rtree/SerializersTest.java'
 Unit test for skyline.
-- SkylineMain in '/Users/y/Courses/562database/cs562project1/rtree/src/test/java/com/github/davidmoten/rtree/SkylineMain.java'
+- SkylineMain in '/cs562project1/rtree/src/test/java/com/github/davidmoten/rtree/SkylineMain.java'
 Insert the points of the given dataset into an R-tree and create an output.txt file recording the skyline points.
