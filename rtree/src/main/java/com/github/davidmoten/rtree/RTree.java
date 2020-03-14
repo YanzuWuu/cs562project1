@@ -45,6 +45,8 @@ public final class RTree<T, S extends Geometry> {
    */
   private final int size;
 
+  private HashSet<Entry<? extends T, ? extends S>> skyline;
+
   /**
    * Constructor.
    *
@@ -55,6 +57,7 @@ public final class RTree<T, S extends Geometry> {
     this.root = root;
     this.size = size;
     this.context = context;
+    skyline = new HashSet<>();
   }
 
   private RTree() {
@@ -409,6 +412,7 @@ public final class RTree<T, S extends Geometry> {
    */
   @SuppressWarnings("unchecked")
   public RTree<T, S> add(Entry<? extends T, ? extends S> entry) {
+    RTree<T, S> ans;
     if (root.isPresent()) {
       List<Node<T, S>> nodes = root.get().add(entry);
       Node<T, S> node;
@@ -417,12 +421,22 @@ public final class RTree<T, S extends Geometry> {
       else {
         node = context.factory().createNonLeaf(nodes, context);
       }
-      return new RTree<T, S>(node, size + 1, context);
+      ans = new RTree<T, S>(node, size + 1, context);
     } else {
       Leaf<T, S> node = context.factory().createLeaf(Lists.newArrayList((Entry<T, S>) entry),
           context);
-      return new RTree<T, S>(node, size + 1, context);
+      ans = new RTree<T, S>(node, size + 1, context);
     }
+    ans.skyline = skyline;
+    if (!dominated(entry, skyline)) {
+      HashSet<Entry<? extends T, ? extends S>> toBeRemoved = new HashSet<>();
+      for (Entry<? extends T, ? extends S> node : ans.skyline)
+        if (entry.geometry().mbr().x1() <= node.geometry().mbr().x1() && entry.geometry().mbr().y1() <= node.geometry().mbr().y1())
+          toBeRemoved.add(node);
+      ans.skyline.removeAll(toBeRemoved);
+      ans.skyline.add(entry);
+    }
+    return ans;
   }
 
   /**
@@ -557,16 +571,21 @@ public final class RTree<T, S extends Geometry> {
    * @return a new immutable R-tree without one instance of the specified entry
    */
   public RTree<T, S> delete(Entry<? extends T, ? extends S> entry, boolean all) {
+    RTree<T, S> ans;
     if (root.isPresent()) {
       NodeAndEntries<T, S> nodeAndEntries = root.get().delete(entry, all);
       if (nodeAndEntries.node().isPresent() && nodeAndEntries.node().get() == root.get())
-        return this;
+        ans = this;
       else
-        return new RTree<T, S>(nodeAndEntries.node(),
+        ans = new RTree<T, S>(nodeAndEntries.node(),
             size - nodeAndEntries.countDeleted() - nodeAndEntries.entriesToAdd().size(),
             context).add(nodeAndEntries.entriesToAdd());
     } else
-      return this;
+      ans = this;
+    ans.skyline = skyline;
+    if (ans.skyline.remove(entry))
+      ans.skyline();
+    return ans;
   }
 
   /**
@@ -921,31 +940,35 @@ public final class RTree<T, S extends Geometry> {
     return s.toString();
   }
 
-  public HashSet<Entry<T, S>> skyline() {
-    HashSet<Entry<T, S>> ans = new HashSet<>();
-    PriorityQueue<HasGeometry> heap = new PriorityQueue<>((o1, o2) -> (int) Math.round((o1.geometry().mbr().x1() + o1.geometry().mbr().y1()) - (o2.geometry().mbr().x1() + o2.geometry().mbr().y1())));
-    heap.add(root.get());
-    while (!heap.isEmpty()) {
-      HasGeometry top = heap.remove();
-      if (dominated(top, ans))
-        continue;
-      if (top instanceof NonLeaf) {
-        for (Node<T, S> node : ((NonLeaf<T, S>) top).children())
-          if (!dominated(top, ans))
-            heap.add(node);
-      } else if (top instanceof Leaf) {
-        for (Entry<T, S> node : ((Leaf<T, S>) top).entries())
-          if (!dominated(node, ans))
-            ans.add(node);
-      } else if (top instanceof Entry) {
-        if (!dominated(top, ans))
-          ans.add((Entry<T, S>) top);
+  private void skyline() {
+    if (root.isPresent()) {
+      PriorityQueue<HasGeometry> heap = new PriorityQueue<>((o1, o2) -> (int) Math.round((o1.geometry().mbr().x1() + o1.geometry().mbr().y1()) - (o2.geometry().mbr().x1() + o2.geometry().mbr().y1())));
+      heap.add(root.get());
+      while (!heap.isEmpty()) {
+        HasGeometry top = heap.remove();
+        if (dominated(top, skyline))
+          continue;
+        if (top instanceof NonLeaf) {
+          for (Node<T, S> node : ((NonLeaf<T, S>) top).children())
+            if (!dominated(top, skyline))
+              heap.add(node);
+        } else if (top instanceof Leaf) {
+          for (Entry<T, S> node : ((Leaf<T, S>) top).entries())
+            if (!dominated(node, skyline))
+              heap.add(node);
+        } else if (top instanceof Entry) {
+          if (!dominated(top, skyline))
+            skyline.add((Entry<T, S>) top);
+        }
       }
     }
-    return ans;
   }
 
-  private boolean dominated(HasGeometry node, HashSet<Entry<T, S>> set) {
+  public HashSet<Entry<? extends T, ? extends S>> getSkyline() {
+    return skyline;
+  }
+
+  private boolean dominated(HasGeometry node, HashSet<Entry<? extends T, ? extends S>> set) {
     for (HasGeometry n : set)
       if (n.geometry().mbr().x1() <= node.geometry().mbr().x1() && n.geometry().mbr().y1() <= node.geometry().mbr().y1())
         return true;
