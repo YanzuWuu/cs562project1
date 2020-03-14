@@ -2,27 +2,43 @@
 
 ### Team members: Fanmin Zhu, Yuncheng Zhu
 
-## Deployment Instructions
-### 1. Java Requirements
+## Getting started
+### 1. Environment Requirements
+- JDK version: 1.8+
+- Maven version: 3.3+
 
-Install using Maven: Right click pom.xml and select "New Maven Project".
+### 2. Build Project
+```shell script
+cd rtree
+mvn clean install
+```
 
-Maven will install all Java dependencies for this R-tree. You may need to manually configure the JDK for this project. 
-The JDK has to be version 1.8+.
+### 3. Run all unit tests
+```shell script
+mvn test
+```
 
-### 2. Run test
-- Command: `mvn clean install`
+## Run Skyline methods
 
-This command will build the project and run all the test to make sure the the environment is right.
+### 1. Run unit test of Skyline
+The unit test of Skyline implementation is located at `rtree/src/test/java/com/github/davidmoten/rtree/SkylineTest.java`.
 
-## Running the R-tree
+Run the test by the following command
+```shell script
+mvn -Dtest=SkylineTest test
+```
 
-- Go to the following path in our project: `/cs562project1/rtree/src/test/java/com/github/davidmoten/rtree/SkylineMain.java`
+### 2. Get Skyline points from dataset
+The source code is located at `rtree/src/test/java/com/github/davidmoten/rtree/SkylineMain.java`
 
-- Run the SkylineMain.java, which will insert the points of the given dataset into an R-tree and create an output.txt file
-recording the skyline points.
+It will read data from `greek-earthquakes-1964-2000.txt.gz` and output the skyline points to `rtree/output.txt`
 
-## Main coding
+Run it by the following command
+```shell script
+mvn exec:java -Dexec.mainClass="com.github.davidmoten.rtree.SkylineMain" -Dexec.classpathScope="test"
+```
+
+## Details about Skyline implementation
 
 The coding part is mainly distributed in three part:
 - Rtree.java in '/cs562project1/rtree/src/main/java/com/github/davidmoten/rtree/RTree.java'
