@@ -957,7 +957,6 @@ public final class RTree<T, S extends Geometry> {
             if (!dominated(node, skyline))
               heap.add(node);
         } else if (top instanceof Entry) {
-          if (!dominated(top, skyline))
             skyline.add((Entry<T, S>) top);
         }
       }
